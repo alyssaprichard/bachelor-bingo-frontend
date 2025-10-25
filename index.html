@@ -466,7 +466,12 @@
 
         // Connect to server when page loads
         function connectToServer() {
-            socket = io('http://localhost:3000');
+            // Use deployed server URL if in production, localhost if local
+            const serverURL = window.location.hostname === 'localhost' 
+                ? 'http://localhost:3000' 
+                : 'https://bachelor-bingo.onrender.com'; // You'll update this after deploying
+            
+            socket = io(serverURL);
             
             socket.on('connect', () => {
                 console.log('Connected to server!', socket.id);
