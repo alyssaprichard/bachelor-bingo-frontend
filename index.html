@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bachelor Bingo 🌹</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #ffeef8 0%, #ffe5f0 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .app-container {
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #ff1493;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(255, 20, 147, 0.2);
+        }
+
+        .header p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #ff1493;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: #ff1493;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #db0a72;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .room-code {
+            text-align: center;
+            padding: 20px;
+            background: #fff5f7;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .room-code-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .room-code-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff1493;
+            letter-spacing: 4px;
+        }
+
+        .player-list {
+            margin-bottom: 20px;
+        }
+
+        .player-item {
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #ff1493;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .player-name {
+            flex: 1;
+            color: #333;
+        }
+
+        .host-badge {
+            background: #ffd700;
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .bingo-cell {
+            aspect-ratio: 1;
+            background: white;
+            border: 4px solid #ffb6c1;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            font-weight: 600;
+            position: relative;
+            line-height: 1.2;
+        }
+
+        .bingo-cell:hover {
+            border-color: #ff1493;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(255, 20, 147, 0.3);
+        }
+
+        .bingo-cell.marked {
+            background: white;
+            color: #333;
+            border-color: #ff1493;
+        }
+
+        .bingo-cell.marked::after {
+            content: '🌹';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4em;
+            z-index: 10;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+        }
+
+        .bingo-cell.marked .cell-text {
+            opacity: 0;
+        }
+
+        .bingo-cell.free {
+            background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%);
+            color: white;
+            border-color: #ff1493;
+            font-weight: bold;
+            font-size: 0.85em;
+            cursor: default;
+        }
+
+        .bingo-cell.free:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .celebration.active {
+            display: flex;
+        }
+
+        .celebration-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            animation: bounceIn 0.5s;
+            position: relative;
+            z-index: 1002;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: confetti-explode 3s ease-out forwards;
+            z-index: 1001;
+            pointer-events: none;
+        }
+
+        .rose-confetti {
+            background: none !important;
+            width: auto !important;
+            height: auto !important;
+        }
+
+        @keyframes confetti-explode {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--x-movement), var(--y-movement)) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .celebration-content h2 {
+            color: #ff1493;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .celebration-content p {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .game-info-item {
+            text-align: center;
+        }
+
+        .game-info-label {
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .game-info-value {
+            color: #ff1493;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .waiting-message {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>🌹 Bachelor Bingo</h1>
+            <p id="header-subtitle">Play along with your friends!</p>
+        </div>
+
+        <!-- Auth Screen -->
+        <div id="auth-screen" class="screen active">
+            <div class="card">
+                <div class="input-group">
+                    <label>Enter your name</label>
+                    <input type="text" id="username-input" placeholder="Your display name">
+                </div>
+                <button class="btn btn-primary" id="login-btn">Continue</button>
+            </div>
+        </div>
+
+        <!-- Menu Screen -->
+        <div id="menu-screen" class="screen">
+            <div class="card">
+                <button class="btn btn-primary" id="create-room-btn">Create New Room</button>
+                <div class="divider">OR</div>
+                <div class="input-group">
+                    <label>Join existing room</label>
+                    <input type="text" id="room-code-input" placeholder="Enter room code">
+                </div>
+                <button class="btn btn-secondary" id="join-room-btn">Join Room</button>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="screen">
+            <div class="card">
+                <div class="room-code">
+                    <div class="room-code-label">Room Code</div>
+                    <div class="room-code-value" id="display-room-code"></div>
+                    <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
+                        Share this code with your friends!
+                    </p>
+                </div>
+
+                <div class="player-list">
+                    <h3 style="margin-bottom: 12px; color: #333;">Players (<span id="player-count">0</span>)</h3>
+                    <div id="player-list-container"></div>
+                </div>
+
+                <div id="host-controls" style="display: none;">
+                    <button class="btn btn-primary" id="start-game-btn">Start Game</button>
+                </div>
+                <div id="waiting-controls" style="display: none;">
+                    <div class="waiting-message">Waiting for host to start the game...</div>
+                </div>
+
+                <button class="btn btn-secondary" id="leave-room-btn">Leave Room</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-info">
+                <div class="game-info-item">
+                    <div class="game-info-label">Room</div>
+                    <div class="game-info-value" id="game-room-code"></div>
+                </div>
+                <div class="game-info-item">
+                    <div class="game-info-label">Marked</div>
+                    <div class="game-info-value"><span id="marked-count">0</span>/25</div>
+                </div>
+                <div class="game-info-item">
+                    <div class="game-info-label">Players</div>
+                    <div class="game-info-value" id="game-player-count">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="bingo-grid" id="bingo-grid"></div>
+            </div>
+        </div>
+
+        <!-- Celebration Overlay -->
+        <div id="celebration" class="celebration">
+            <div class="celebration-content">
+                <h2>🎉 BINGO! 🎉</h2>
+                <p><span id="winner-name"></span> wins!</p>
+                <button class="btn btn-primary" id="new-round-btn">New Round</button>
+                <button class="btn btn-secondary" id="end-game-btn">End Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Socket connection
+        let socket;
+
+        // Connect to server when page loads
+        function connectToServer() {
+            socket = io('http://localhost:3000');
+            
+            socket.on('connect', () => {
+                console.log('Connected to server!', socket.id);
+            });
+            
+            // Room created successfully
+            socket.on('room-created', (data) => {
+                console.log('Room created:', data);
+                gameState.roomCode = data.roomCode;
+                gameState.players = data.players;
+                gameState.isHost = true;
+                
+                document.getElementById('display-room-code').textContent = data.roomCode;
+                document.getElementById('host-controls').style.display = 'block';
+                document.getElementById('waiting-controls').style.display = 'none';
+                
+                renderPlayers();
+                showScreen('lobby-screen');
+            });
+            
+            // Joined room successfully
+            socket.on('room-joined', (data) => {
+                console.log('Joined room:', data);
+                gameState.roomCode = data.roomCode;
+                gameState.players = data.players;
+                gameState.isHost = false;
+                
+                document.getElementById('display-room-code').textContent = data.roomCode;
+                document.getElementById('host-controls').style.display = 'none';
+                document.getElementById('waiting-controls').style.display = 'block';
+                
+                renderPlayers();
+                showScreen('lobby-screen');
+            });
+            
+            // Another player joined the room
+            socket.on('player-joined', (data) => {
+                console.log('Player joined:', data.player.username);
+                gameState.players = data.players;
+                renderPlayers();
+            });
+            
+            // A player left the room
+            socket.on('player-left', (data) => {
+                console.log('Player left');
+                gameState.players = data.players;
+                renderPlayers();
+            });
+            
+            // Host changed (if original host left)
+            socket.on('new-host', (data) => {
+                console.log('New host assigned');
+                gameState.players = data.players;
+                
+                // Check if we're the new host
+                const ourPlayer = data.players.find(p => p.id === socket.id);
+                if (ourPlayer && ourPlayer.isHost) {
+                    gameState.isHost = true;
+                    document.getElementById('host-controls').style.display = 'block';
+                    document.getElementById('waiting-controls').style.display = 'none';
+                }
+                
+                renderPlayers();
+            });
+            
+            // Error handling
+            socket.on('error', (data) => {
+                alert('Error: ' + data.message);
+                console.error('Server error:', data);
+            });
+            
+            // Game started - receive our unique bingo card
+            socket.on('game-started', (data) => {
+                console.log('Game started! Received bingo card:', data);
+                gameState.bingoCard = data.bingoCard;
+                gameState.markedSquares = new Array(25).fill(false);
+                gameState.markedSquares[12] = true; // Mark FREE SPACE
+                
+                document.getElementById('game-room-code').textContent = gameState.roomCode;
+                document.getElementById('game-player-count').textContent = data.players.length;
+                
+                renderBingoGrid();
+                showScreen('game-screen');
+            });
+            
+            // Another player marked a square
+            socket.on('square-marked', (data) => {
+                console.log(`${data.username} marked square ${data.index}:`, data.marked);
+                
+                // If it's our own mark, we already updated locally
+                if (data.playerId === socket.id) {
+                    return;
+                }
+                
+                // Show a subtle notification that someone else marked
+                // (Optional - you could add visual feedback here)
+            });
+            
+            // Someone won!
+            socket.on('player-won', (data) => {
+                console.log(`${data.username} won!`);
+                
+                // Show celebration for winner
+                document.getElementById('winner-name').textContent = data.username;
+                document.getElementById('celebration').classList.add('active');
+                
+                // Trigger confetti after short delay
+                setTimeout(() => {
+                    createConfetti();
+                }, 500);
+            });
+            
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+            });
+        }
+
+        // Call this when the page loads
+        connectToServer();
+
+        // Sample clichés library
+        const CLICHES = [
+            "Here for the right reasons",
+            "Can I steal you?",
+            "Most dramatic season",
+            "Journey",
+            "Process",
+            "Helicopter date",
+            "Hot tub scene",
+            "Someone cries",
+            "Champagne toast",
+            "Rose ceremony drama",
+            "Awkward silence",
+            "Group date drama",
+            "I'm falling for you",
+            "Fantasy suite card",
+            "Hometown visit",
+            "Meeting the parents",
+            "Interrupted conversation",
+            "Close-up of a rose",
+            "Dramatic music swell",
+            "Sunset walk on beach",
+            "Will you accept this rose?",
+            "Final rose tonight",
+            "Connection",
+            "Vulnerable moment",
+            "Open up emotionally",
+            "Trust the process",
+            "Love triangle",
+            "Cocktail party drama",
+            "Tears during ITM",
+            "Not here to make friends",
+            "Leap of faith",
+            "Take a chance on love",
+            "Follow my heart",
+            "Wife material",
+            "Meet my family"
+        ];
+
+        // Game state
+        let gameState = {
+            username: '',
+            roomCode: '',
+            isHost: false,
+            players: [],
+            bingoCard: [],
+            markedSquares: new Array(25).fill(false)
+        };
+
+        // Helper functions
+        function generateRoomCode() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function generateBingoCard() {
+            const shuffled = [...CLICHES].sort(() => Math.random() - 0.5);
+            const card = shuffled.slice(0, 24);
+            card.splice(12, 0, "FREE SPACE");
+            return card;
+        }
+
+        function checkWin(marked) {
+            const size = 5;
+            
+            // Check rows
+            for (let i = 0; i < size; i++) {
+                let row = [];
+                for (let j = 0; j < size; j++) {
+                    row.push(marked[i * size + j]);
+                }
+                if (row.every(m => m)) return true;
+            }
+            
+            // Check columns
+            for (let i = 0; i < size; i++) {
+                let col = [];
+                for (let j = 0; j < size; j++) {
+                    col.push(marked[i + j * size]);
+                }
+                if (col.every(m => m)) return true;
+            }
+            
+            // Check diagonals
+            let diag1 = [marked[0], marked[6], marked[12], marked[18], marked[24]];
+            if (diag1.every(m => m)) return true;
+            
+            let diag2 = [marked[4], marked[8], marked[12], marked[16], marked[20]];
+            if (diag2.every(m => m)) return true;
+            
+            return false;
+        }
+
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase();
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function renderPlayers() {
+            const container = document.getElementById('player-list-container');
+            container.innerHTML = '';
+            
+            gameState.players.forEach(player => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'player-item';
+                playerItem.innerHTML = `
+                    <div class="player-avatar">${getInitials(player.username)}</div>
+                    <div class="player-name">${player.username}</div>
+                    ${player.isHost ? '<span class="host-badge">HOST</span>' : ''}
+                `;
+                container.appendChild(playerItem);
+            });
+            
+            document.getElementById('player-count').textContent = gameState.players.length;
+        }
+
+        function renderBingoGrid() {
+            const grid = document.getElementById('bingo-grid');
+            grid.innerHTML = '';
+            
+            gameState.bingoCard.forEach((cliche, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'bingo-cell';
+                if (gameState.markedSquares[index]) {
+                    cell.classList.add('marked');
+                }
+                if (index === 12) {
+                    cell.classList.add('free');
+                }
+                cell.textContent = cliche;
+                cell.addEventListener('click', () => handleSquareClick(index));
+                grid.appendChild(cell);
+            });
+            
+            updateMarkedCount();
+        }
+
+        function updateMarkedCount() {
+            const count = gameState.markedSquares.filter(m => m).length;
+            document.getElementById('marked-count').textContent = count;
+        }
+
+        function handleSquareClick(index) {
+            if (index === 12) return; // Free space
+            if (document.getElementById('celebration').classList.contains('active')) return;
+            
+            // Update locally first for immediate feedback
+            gameState.markedSquares[index] = !gameState.markedSquares[index];
+            renderBingoGrid();
+            
+            // Add animation class only to the cell that was just clicked
+            if (gameState.markedSquares[index]) {
+                const cells = document.querySelectorAll('.bingo-cell');
+                const clickedCell = cells[index];
+                clickedCell.classList.add('just-clicked');
+                
+                // Remove the animation class after animation completes
+                setTimeout(() => {
+                    clickedCell.classList.remove('just-clicked');
+                }, 500);
+            }
+            
+            // Tell server about the mark (server will check for win and broadcast)
+            socket.emit('mark-square', {
+                roomCode: gameState.roomCode,
+                index: index
+            });
+        }
+
+        function createConfetti() {
+            const colors = ['#ff1493', '#ff69b4', '#ffb6c1', '#ff6b9d', '#ffc0cb', '#ff1493'];
+            const confettiPerCorner = 20;
+            const rosesPerCorner = 5;
+            
+            // Get the celebration overlay and the white popup box
+            const celebration = document.getElementById('celebration');
+            const popup = document.querySelector('.celebration-content');
+            const popupRect = popup.getBoundingClientRect();
+            const celebrationRect = celebration.getBoundingClientRect();
+            
+            // Calculate the 4 corners (relative to celebration overlay)
+            const corners = [
+                { // Top-left - burst up and left (wider spread)
+                    x: popupRect.left - celebrationRect.left,
+                    y: popupRect.top - celebrationRect.top,
+                    angleMin: 135,
+                    angleMax: 315
+                },
+                { // Top-right - burst up and right (wider spread)
+                    x: popupRect.right - celebrationRect.left,
+                    y: popupRect.top - celebrationRect.top,
+                    angleMin: 225,
+                    angleMax: 45
+                },
+                { // Bottom-left - burst down and left (wider spread)
+                    x: popupRect.left - celebrationRect.left,
+                    y: popupRect.bottom - celebrationRect.top,
+                    angleMin: 45,
+                    angleMax: 225
+                },
+                { // Bottom-right - burst down and right (wider spread)
+                    x: popupRect.right - celebrationRect.left,
+                    y: popupRect.bottom - celebrationRect.top,
+                    angleMin: 315,
+                    angleMax: 135
+                }
+            ];
+            
+            // Create confetti from each corner
+            corners.forEach(corner => {
+                // Regular confetti
+                for (let i = 0; i < confettiPerCorner; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    
+                    confetti.style.left = corner.x + 'px';
+                    confetti.style.top = corner.y + 'px';
+                    
+                    // Random color
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    // Random size
+                    const size = Math.random() * 10 + 5;
+                    confetti.style.width = size + 'px';
+                    confetti.style.height = size + 'px';
+                    
+                    // Random shape
+                    if (Math.random() > 0.5) {
+                        confetti.style.borderRadius = '50%';
+                    }
+                    
+                    // Shoot outward from corner
+                    let angle;
+                    if (corner.angleMax < corner.angleMin) {
+                        const range1 = 360 - corner.angleMin;
+                        const range2 = corner.angleMax;
+                        const totalRange = range1 + range2;
+                        const randomValue = Math.random() * totalRange;
+                        angle = randomValue < range1 ? 
+                            (corner.angleMin + randomValue) : 
+                            (randomValue - range1);
+                    } else {
+                        angle = Math.random() * (corner.angleMax - corner.angleMin) + corner.angleMin;
+                    }
+                    angle = angle * (Math.PI / 180);
+                    const velocity = Math.random() * 500 + 400;
+                    const xMovement = Math.cos(angle) * velocity;
+                    const yMovement = Math.sin(angle) * velocity;
+                    
+                    confetti.style.setProperty('--x-movement', xMovement + 'px');
+                    confetti.style.setProperty('--y-movement', yMovement + 'px');
+                    
+                    confetti.style.animationDuration = (Math.random() * 1.5 + 2) + 's';
+                    confetti.style.animationDelay = (Math.random() * 0.2) + 's';
+                    
+                    celebration.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 5000);
+                }
+                
+                // Rose emoji confetti
+                for (let i = 0; i < rosesPerCorner; i++) {
+                    const rose = document.createElement('div');
+                    rose.className = 'confetti rose-confetti';
+                    rose.textContent = '🌹';
+                    
+                    rose.style.left = corner.x + 'px';
+                    rose.style.top = corner.y + 'px';
+                    rose.style.fontSize = (Math.random() * 20 + 25) + 'px';
+                    
+                    // Shoot outward from corner
+                    let angle;
+                    if (corner.angleMax < corner.angleMin) {
+                        const range1 = 360 - corner.angleMin;
+                        const range2 = corner.angleMax;
+                        const totalRange = range1 + range2;
+                        const randomValue = Math.random() * totalRange;
+                        angle = randomValue < range1 ? 
+                            (corner.angleMin + randomValue) : 
+                            (randomValue - range1);
+                    } else {
+                        angle = Math.random() * (corner.angleMax - corner.angleMin) + corner.angleMin;
+                    }
+                    angle = angle * (Math.PI / 180);
+                    const velocity = Math.random() * 500 + 400;
+                    const xMovement = Math.cos(angle) * velocity;
+                    const yMovement = Math.sin(angle) * velocity;
+                    
+                    rose.style.setProperty('--x-movement', xMovement + 'px');
+                    rose.style.setProperty('--y-movement', yMovement + 'px');
+                    
+                    rose.style.animationDuration = (Math.random() * 1.5 + 2) + 's';
+                    rose.style.animationDelay = (Math.random() * 0.2) + 's';
+                    
+                    celebration.appendChild(rose);
+                    
+                    setTimeout(() => {
+                        rose.remove();
+                    }, 5000);
+                }
+            });
+        }
+
+        function showCelebration() {
+            document.getElementById('winner-name').textContent = gameState.username;
+            document.getElementById('celebration').classList.add('active');
+            // Delay confetti by 0.5 seconds so the box appears first
+            setTimeout(() => {
+                createConfetti();
+            }, 500);
+        }
+
+        function hideCelebration() {
+            document.getElementById('celebration').classList.remove('active');
+        }
+
+        // Event listeners
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const username = document.getElementById('username-input').value.trim();
+            if (username) {
+                gameState.username = username;
+                document.getElementById('header-subtitle').textContent = `Welcome, ${username}!`;
+                showScreen('menu-screen');
+            }
+        });
+
+        document.getElementById('username-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('login-btn').click();
+            }
+        });
+
+        document.getElementById('create-room-btn').addEventListener('click', () => {
+            console.log('Creating room...');
+            // Tell server to create a room
+            socket.emit('create-room', { username: gameState.username });
+            // Server will respond with 'room-created' event (handled above)
+        });
+
+        document.getElementById('join-room-btn').addEventListener('click', () => {
+            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+            if (code) {
+                console.log('Joining room:', code);
+                // Tell server to join this room
+                socket.emit('join-room', { 
+                    roomCode: code, 
+                    username: gameState.username 
+                });
+                // Server will respond with 'room-joined' event (handled above)
+            }
+        });
+
+        document.getElementById('room-code-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('join-room-btn').click();
+            }
+        });
+
+        document.getElementById('start-game-btn').addEventListener('click', () => {
+            console.log('Starting game...');
+            // Tell server to start the game (server will generate cards)
+            socket.emit('start-game', { roomCode: gameState.roomCode });
+            // Server will respond with 'game-started' event with our unique card
+        });
+
+        document.getElementById('leave-room-btn').addEventListener('click', () => {
+            showScreen('menu-screen');
+        });
+
+        document.getElementById('new-round-btn').addEventListener('click', () => {
+            hideCelebration();
+            gameState.bingoCard = generateBingoCard();
+            gameState.markedSquares = new Array(25).fill(false);
+            gameState.markedSquares[12] = true;
+            renderBingoGrid();
+        });
+
+        document.getElementById('end-game-btn').addEventListener('click', () => {
+            hideCelebration();
+            showScreen('lobby-screen');
+        });
+    </script>
+</body>
+</html>
