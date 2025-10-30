@@ -390,6 +390,8 @@
 
             .bingo-grid {
                 gap: 2px;
+                max-width: 100%;
+                width: 100%;
             }
 
             .bingo-cell {
@@ -398,6 +400,9 @@
                 border-width: 1px;
                 border-radius: 6px;
                 line-height: 1;
+                min-width: 0;
+                overflow: hidden;
+                word-wrap: break-word;
             }
 
             .bingo-cell.marked::after {
@@ -464,12 +469,14 @@
 
             .bingo-grid {
                 gap: 2px;
+                max-width: 100%;
             }
 
             .bingo-cell {
                 font-size: 0.32em;
                 padding: 2px;
                 border-width: 1px;
+                min-width: 0;
             }
 
             .bingo-cell.marked::after {
