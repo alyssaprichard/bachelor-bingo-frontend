@@ -367,6 +367,171 @@
             color: #666;
             padding: 20px;
         }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px 10px;
+                align-items: flex-start;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .header {
+                margin-bottom: 20px;
+            }
+
+            .card {
+                padding: 20px;
+                border-radius: 12px;
+            }
+
+            .bingo-grid {
+                gap: 6px;
+            }
+
+            .bingo-cell {
+                font-size: 0.65em;
+                padding: 6px;
+                border-width: 3px;
+                border-radius: 12px;
+            }
+
+            .bingo-cell.marked::after {
+                font-size: 3em;
+            }
+
+            .bingo-cell.free {
+                font-size: 0.7em;
+            }
+
+            .room-code-value {
+                font-size: 1.5em;
+                letter-spacing: 3px;
+            }
+
+            .celebration-content {
+                padding: 30px 20px;
+                margin: 0 15px;
+                max-width: 90vw;
+            }
+
+            .celebration-content h2 {
+                font-size: 2em;
+            }
+
+            .celebration-content p {
+                font-size: 1em;
+            }
+
+            .btn {
+                padding: 12px;
+                font-size: 15px;
+            }
+
+            #finish-game-container {
+                bottom: 15px;
+                right: 15px;
+            }
+
+            #finish-game-btn {
+                padding: 12px 20px !important;
+                font-size: 1em !important;
+            }
+
+            .game-info {
+                font-size: 0.8em;
+                padding: 10px;
+            }
+
+            .game-info-value {
+                font-size: 1.1em;
+            }
+        }
+
+        /* Extra small phones */
+        @media (max-width: 400px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .bingo-cell {
+                font-size: 0.6em;
+                padding: 4px;
+            }
+
+            .bingo-cell.marked::after {
+                font-size: 2.5em;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .celebration-content {
+                padding: 20px 15px;
+            }
+
+            .celebration-content h2 {
+                font-size: 1.8em;
+            }
+
+            #finish-game-btn {
+                padding: 10px 16px !important;
+                font-size: 0.9em !important;
+            }
+        }
+
+        /* Landscape phones */
+        @media (max-width: 900px) and (orientation: landscape) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                margin-bottom: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .bingo-grid {
+                gap: 5px;
+            }
+
+            .bingo-cell {
+                font-size: 0.6em;
+                padding: 5px;
+            }
+
+            .game-info {
+                padding: 8px;
+                font-size: 0.75em;
+            }
+        }
+
+        /* Touch-friendly improvements */
+        @media (hover: none) and (pointer: coarse) {
+            .bingo-cell {
+                padding: 8px;
+            }
+
+            .btn {
+                padding: 14px;
+                min-height: 44px; /* iOS minimum touch target */
+            }
+
+            input {
+                font-size: 16px !important; /* Prevents iOS zoom on focus */
+            }
+        }
     </style>
 </head>
 <body>
@@ -678,7 +843,7 @@
 
         // Sample clichés library
         const CLICHES = [
-    "Here for the right reasons",
+            "Here for the right reasons",
     "Dramatic ending",
     "Journey",
     "Process",
@@ -751,7 +916,7 @@
     "Jesse asks Mel if he regrets his final choice",
     "A surprise guest appears",
     "Everyone hugs at the end like nothing happened"
-    ];
+        ];
 
         // Game state
         let gameState = {
