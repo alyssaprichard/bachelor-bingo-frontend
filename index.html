@@ -783,9 +783,13 @@
                 console.log(`${data.username} won!`);
                 
                 // Add celebration haptic feedback (stronger)
-                if ('vibrate' in navigator) {
-                    // Victory pattern: short, pause, long, pause, short
-                    navigator.vibrate([50, 50, 100, 50, 50]);
+                try {
+                    if (window.navigator && window.navigator.vibrate) {
+                        // Victory pattern: short, pause, long, pause, short
+                        window.navigator.vibrate([50, 50, 100, 50, 50]);
+                    }
+                } catch (e) {
+                    console.log('Haptics not supported');
                 }
                 
                 // Show celebration
@@ -861,8 +865,33 @@
                 }, 500);
             });
             
-            socket.on('disconnect', () => {
-                console.log('Disconnected from server');
+            socket.on('disconnect', (reason) => {
+                console.log('Disconnected from server:', reason);
+                
+                // Show a subtle notification
+                if (reason === 'io server disconnect') {
+                    console.log('Server closed connection');
+                } else {
+                    console.log('Connection lost, will auto-reconnect...');
+                }
+            });
+            
+            socket.on('connect_error', (error) => {
+                console.log('Connection error:', error);
+            });
+            
+            // Handle reconnection
+            socket.io.on('reconnect', (attemptNumber) => {
+                console.log('Reconnected after', attemptNumber, 'attempts');
+                
+                // If we were in a room, try to rejoin
+                if (gameState.roomCode && gameState.username) {
+                    console.log('Attempting to rejoin room:', gameState.roomCode);
+                    socket.emit('join-room', {
+                        roomCode: gameState.roomCode,
+                        username: gameState.username
+                    });
+                }
             });
         }
 
@@ -871,44 +900,41 @@
 
         // Sample clichés library
         const CLICHES = [
-            "Mel references or apologizes for his earlier comments about age",
-    "Someone interrupts another person mid-sentence",
-    "“I didn’t get closure” or “You never answered my question” line",
-    "Mel hugs a contestant when she walks on stage",
-    "Mel says “chemistry” or “connection” as a reason for being drawn to someone",
-    "A flashback clip to a previous date or limo entrance",
-    "Audience gasps loudly",
-    "A woman says she wants “authenticity” or “someone real”",
-    "A contestant admits she “fell harder than expected.”",
-    "A woman gets a standing ovation from the audience.",
-    "A woman says “I discovered things about myself”",
-    "Blooper real with farts",
-    "“That’s not how it happened!”",
-    "A woman says she was “blindsided.”",
-    "Someone mentions social media or “the internet.”",
-    "Jesse Palmer steps in to calm things down.",
-    "A contestant jokes about hot flashes or memory loss.",
-    "Reaction shot of someone visibly rolling their eyes.",
-    "Tears of any kind",
-    "Jesse says, “America fell in love with you.”",
-    "A contestant references faith or fate.",
-    "Awkward silence after a dramatic reveal.",
-    "Someone says “I wish you the best, truly.”",
-    "Someone mentions “closure” more than once.",
-    "A contestant says she’s “dating again” or “met someone new.”",
-    "Audience chants or claps mid-argument.",
-    "A “villain” contestant gets applause or redemption moment.",
-    "Mel says, “You’re an amazing woman.”",
-    "Someone says, “I have no regrets.”",
-    "Jesse Palmer makes a joke that’s cheesy or doesn’t land.",
-    "A contestant flirts with Jesse.",
-    "Someone forgets another contestant’s name.",
-    "Fantasy suite reference",
-    "Someone references a private conversation that clearly wasn’t private.",
-    "Someone says, “You deserve happiness.”",
-    "Jesse or a contestant asks Mel if he regrets his final choice.",
-    "A surprise guest.",
-    "Everyone hugs at the end like nothing happened."
+            "Here for the right reasons",
+            "Can I steal you?",
+            "Most dramatic season",
+            "Journey",
+            "Process",
+            "Helicopter date",
+            "Hot tub scene",
+            "Someone cries",
+            "Champagne toast",
+            "Rose ceremony drama",
+            "Awkward silence",
+            "Group date drama",
+            "I'm falling for you",
+            "Fantasy suite card",
+            "Hometown visit",
+            "Meeting the parents",
+            "Interrupted conversation",
+            "Close-up of a rose",
+            "Dramatic music swell",
+            "Sunset walk on beach",
+            "Will you accept this rose?",
+            "Final rose tonight",
+            "Connection",
+            "Vulnerable moment",
+            "Open up emotionally",
+            "Trust the process",
+            "Love triangle",
+            "Cocktail party drama",
+            "Tears during ITM",
+            "Not here to make friends",
+            "Leap of faith",
+            "Take a chance on love",
+            "Follow my heart",
+            "Wife material",
+            "Meet my family"
         ];
 
         // Game state
@@ -1031,9 +1057,13 @@
             if (document.getElementById('celebration').classList.contains('active')) return;
             
             // Add haptic feedback on mobile devices
-            if ('vibrate' in navigator) {
-                // Light tap for marking
-                navigator.vibrate(10);
+            // Try modern iOS Haptic Engine first, then fallback to vibrate
+            try {
+                if (window.navigator && window.navigator.vibrate) {
+                    window.navigator.vibrate(10);
+                }
+            } catch (e) {
+                console.log('Haptics not supported');
             }
             
             // Update locally first for immediate feedback
