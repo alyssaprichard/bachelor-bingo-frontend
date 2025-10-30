@@ -782,6 +782,12 @@
             socket.on('player-won', (data) => {
                 console.log(`${data.username} won!`);
                 
+                // Add celebration haptic feedback (stronger)
+                if ('vibrate' in navigator) {
+                    // Victory pattern: short, pause, long, pause, short
+                    navigator.vibrate([50, 50, 100, 50, 50]);
+                }
+                
                 // Show celebration
                 document.getElementById('celebration-title').textContent = data.gameMode === 'blackout' ? '🎉 BLACKOUT! 🎉' : '🎉 BINGO! 🎉';
                 document.getElementById('winner-name').textContent = data.username;
@@ -1058,6 +1064,12 @@
         function handleSquareClick(index) {
             if (index === 12) return; // Free space
             if (document.getElementById('celebration').classList.contains('active')) return;
+            
+            // Add haptic feedback on mobile devices
+            if ('vibrate' in navigator) {
+                // Light tap for marking
+                navigator.vibrate(10);
+            }
             
             // Update locally first for immediate feedback
             gameState.markedSquares[index] = !gameState.markedSquares[index];
